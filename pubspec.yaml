@@ -13,10 +13,7 @@ dependencies:
   sqflite: ^1.3.1
   sqflite_common: ^1.0.2+1
   colorize: ^2.0.0
-
-  core_extension:
-    git:
-      url: git://github.com/hsul4n/dart-extension.git
+  core_extension: ^1.0.0
 
 dev_dependencies:
   flutter_test:

@@ -1,0 +1,8 @@
+- Use DaoImpl.
+- Set Dao as abstract class contains interfaces.
+- Add unit test.
+- Fix relations problem.
+- Make persistence return object or map.
+- Fix multiple realtions between models while inseting
+- Fix relations load.
+- Add support for default values by passing null in attributes if attribute is null.

@@ -8,21 +8,23 @@ import 'package:sqfly/sqfly.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  await Sqfly(
+  final sqfly = await Sqfly.initialize(
+    inMemory: true,
     version: 1,
     daos: [
       PersonDao(),
       DogDao(),
     ],
-  ).init();
+  );
 
   /// [belongs-to]
-  await Sqfly.instance<DogDao>().create(
+  await sqfly<DogDao>().create(
     Dog(
       name: 'Dog-1',
       person: Person(name: 'Person-1'),
     ),
   );
+
   // print(Sqfly.instance<DogDao>().where({'name': 'ALI'}).toSql());
 
   /// [has-one]

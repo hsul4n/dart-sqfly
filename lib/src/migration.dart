@@ -1,14 +1,20 @@
 import 'dart:async';
 
+import 'package:sqflite/sqlite_api.dart';
 import 'package:sqfly/sqfly.dart';
 import 'package:sqfly/src/dao.dart';
 import 'package:sqfly/src/logger.dart';
 import 'package:sqfly/src/definitions/schema.dart';
 
 class Migration {
-  static Future force(Dao dao) async {
+  final Database database;
+  final bool logger;
+
+  Migration({final this.database, final this.logger});
+
+  Future force(Dao dao) async {
     final newSchema = dao.schema;
-    final oldSchema = Schema((await Sqfly.database.rawQuery(
+    final oldSchema = Schema((await database.rawQuery(
             "SELECT sql FROM sqlite_master WHERE name = '${dao.schema.table}'"))
         .first
         .values
@@ -48,9 +54,9 @@ class Migration {
         /// Enable foreign key constraint check
         'PRAGMA foreign_keys=ON',
       ], (sql) async {
-        final completer = Completer()..complete(Sqfly.database.execute(sql));
+        final completer = Completer()..complete(database.execute(sql));
 
-        if (Sqfly.logger) Logger.sql(completer.future, sql);
+        if (logger) Logger.sql(completer.future, sql);
         await completer.future;
       });
     }

@@ -11,7 +11,7 @@ void main() {
   // });
 
   test('count', () async {
-    final instance = await sqfly.init();
+    final instance = await sqfly;
     await instance<PersonDao>().create(Person(name: 'Mike'));
     expect(await instance<PersonDao>().count(), 1);
   });

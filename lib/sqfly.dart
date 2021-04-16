@@ -6,7 +6,7 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
-import 'package:sqflite/sqflite.dart';
+import 'package:sqflite/sqflite.dart' as sqflite;
 import 'package:sqfly/src/dao.dart';
 import 'package:sqfly/src/migration.dart';
 
@@ -16,104 +16,46 @@ export 'src/include.dart';
 
 export 'src/relations.dart';
 
-class Sqfly {
-  // your database name
-  final String name;
+part 'src/sqfly_impl.dart';
 
-  // your db version
-  final int version;
-
-  /// use to import database localy from `assets` folder default `false`
-  /// if `true` make sure to locate db file at `assets/database.db`
-  final bool import;
-
-  /// list of migrations
-  // final List<Migration> migrations;
-
-  /// list of your daos `Data Access Object`
-  // static final List<Dao> _daos = [];
-  static final Map<Type, Dao> _daos = {};
-  static Map<Type, Dao> get daos => _daos;
-
-  static bool logger;
-
-  static Sqfly _instance;
-  static Sqfly get instance {
-    if (_instance == null)
-      throw Exception("Make sure that you called Sqfly.singlton");
-
+abstract class Sqfly {
+  static _SqflyImpl _instance;
+  static _SqflyImpl get instance {
+    assert(_instance != null,
+        'No instance found, please make sure to call [initialize] before getting instance');
     return _instance;
   }
 
-  Sqfly.singlton({
-    final this.name,
-    @required final this.version,
-    @required final List<Dao> daos,
-    final this.import = false,
-    final bool logger,
-    final bool memory,
-  }) {
-    Sqfly._instance = Sqfly(
-      name: name,
-      version: version,
-      daos: daos,
-      import: import,
-      logger: logger,
-      memory: memory,
-    );
-  }
-
-  Sqfly({
+  static Future<_SqflyImpl> initialize({
     final String name,
-    @required final this.version,
+    @required final int version,
     @required final List<Dao> daos,
-    // final this.migrations = const [],
-    final bool import,
-    final bool logger,
-    final bool memory = false,
-  })  :
-        // set null name when in-memory
-        name = (memory != null && memory) ? null : name,
-        assert(version != null && version > 0),
-        assert(daos != null && daos.isNotEmpty),
-        import = import ?? false
+    final String path,
+    final bool logger = kDebugMode,
+    final bool import = false,
+    final bool inMemory = false,
+  }) async {
+    assert(version != null && version > 0);
+    assert(daos != null && daos.isNotEmpty);
+    assert(logger != null);
+    assert(import != null);
+    assert(inMemory != null);
+    if (!inMemory)
+      assert(
+        name != null,
+        'Name property is required while not using in-memory database',
+      );
 
-  // /// make sure that can't use memory with import
-  // assert(name != null && !import)
-  {
-    Sqfly.logger = logger ?? kDebugMode;
-    for (final dao in daos) Sqfly._daos[dao.runtimeType] = dao;
-  }
-
-  // static Dao<T> call2<T>(type) => _daos.firstWhere(
-  //       (i) => i.runtimeType == type,
-  //       orElse: () => null,
-  //     );
-  // static Dao get(type) => _daos.firstWhere(
-  //       (i) => i.runtimeType == type,
-  //       orElse: () => null,
-  //     );
-
-  // T call<T>() => _daos[T] as T;
-  T call<T>() => _daos.values.whereType<T>().first;
-  T get<T>() => this.call<T>();
-
-  static Database _database;
-  static Database get database => _database;
-
-  Future<Sqfly> init() async {
-    if (_database != null) return this;
-
-    final path = name != null
-        ? '${await getDatabasesPath()}/flutter_$name.db'
-        : inMemoryDatabasePath;
+    final databasePath = inMemory
+        ? sqflite.inMemoryDatabasePath
+        : '${path ?? await sqflite.getDatabasesPath()}/$name.db';
 
     if (import) {
-      final isExists = await databaseExists(path);
+      final isExists = await sqflite.databaseExists(databasePath);
 
       if (!isExists) {
         // Should happen only the first time you launch your application
-        if (logger) print("Creating new copy from assets.database.db");
+        if (logger) print('Creating new copy from "assets/$name.db"');
 
         // Make sure the parent directory isExists
         try {
@@ -123,7 +65,7 @@ class Sqfly {
           await Directory(dir.join('/')).create(recursive: true);
         } catch (_) {}
 
-        final data = await rootBundle.load('assets/database.db');
+        final data = await rootBundle.load('assets/$name.db');
 
         // Convert to bytes
         final List<int> bytes = data.buffer.asUint8List(
@@ -136,67 +78,31 @@ class Sqfly {
       }
     }
 
-    await openDatabase(
-      path,
-      version: version,
-      onConfigure: (Database database) => Sqfly._database = database,
-      onCreate: (_, __) async {
-        await Future.forEach(
-            _daos.values.map((dao) => dao.schema.sql), database.execute);
-
-        // await Future.forEach(
-        //   migrations.where((migration) =>
-        //       migration.isUpgrade && migration.to <= version),
-        //   (Migration migration) async {
-        //     await migration.change(database);
-        //   },
-        // );
-      },
-      onUpgrade: (_, int from, int to) async {
-        if (Sqfly.logger) print('Upgrading from $from to $to');
-        await Future.forEach(Sqfly.daos.values, Migration.force);
-
-        // await Future.forEach(
-        //   migrations.where((migration) =>
-        //       migration.isUpgrade &&
-        //       migration.from >= from &&
-        //       migration.to <= to),
-        //   (Migration migration) async {
-        //     await migration.change(database);
-        //   },
-        // );
-      },
-      onDowngrade: (_, int from, int to) async {
-        if (Sqfly.logger) print('Downgrading from $from to $to');
-        await Future.forEach(Sqfly.daos.values, Migration.force);
-        // await Future.forEach(
-        //   migrations.where((migration) =>
-        //       !migration.isUpgrade &&
-        //       migration.from <= from &&
-        //       migration.to >= to),
-        //   (Migration migration) async {
-        //     await migration.change(database);
-        //   },
-        // );
-      },
+    return _instance = _SqflyImpl(
+      logger: logger,
+      daos: Map<Type, Dao>.fromIterable(
+        daos,
+        key: (dao) => dao.runtimeType,
+        value: (dao) => dao,
+      ),
+      database: await sqflite.openDatabase(
+        databasePath,
+        version: version,
+        onCreate: (database, _) async {
+          await Future.forEach(
+              daos.map((dao) => dao.schema.sql), database.execute);
+        },
+        onUpgrade: (sqflite.Database database, int from, int to) async {
+          if (logger) print('Upgrading from $from to $to');
+          final migration = Migration(database: database, logger: logger);
+          await Future.forEach(daos, migration.force);
+        },
+        onDowngrade: (sqflite.Database database, int from, int to) async {
+          if (logger) print('Downgrading from $from to $to');
+          final migration = Migration(database: database, logger: logger);
+          await Future.forEach(daos, migration.force);
+        },
+      ),
     );
-
-    return this;
   }
 }
-
-// TODO:
-// - Fix migrations
-// - Finish calculations
-// - Finish finders
-// - Finish regex for remaining
-// - Add test
-
-// TODO:
-// - Check UPDATE & DELETE TO USE builder
-// - Add testing
-
-// TOOD:
-// - Add support for hasOne and belongsTo
-// - Finish ReadMe
-// - Add testings

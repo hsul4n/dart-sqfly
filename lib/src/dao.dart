@@ -30,7 +30,8 @@ class Dao<T> implements Queries<T>, Persistence<T> {
         schema = Schema(sql);
 
   Type get type => T;
-  Database get database => Sqfly.database;
+  Database get database => Sqfly.instance.database;
+  bool get isLogger => Sqfly.instance.logger;
 
   final List<String> _select = [];
   final List<String> _columns = [];
@@ -64,7 +65,7 @@ class Dao<T> implements Queries<T>, Persistence<T> {
     final completer = Completer<int>()
       ..complete(database.rawUpdate(builder.sql, builder.arguments));
 
-    if (Sqfly.logger) Logger.update(type, completer.future, builder);
+    if (isLogger) Logger.update(type, completer.future, builder);
 
     return await completer.future.whenComplete(clear);
   }
@@ -84,7 +85,7 @@ class Dao<T> implements Queries<T>, Persistence<T> {
     final completer = Completer<List<Map<String, dynamic>>>()
       ..complete(database.rawQuery(builder.sql, builder.arguments));
 
-    if (Sqfly.logger) Logger.query(type, completer.future, builder);
+    if (isLogger) Logger.query(type, completer.future, builder);
     final result = await completer.future;
 
     return result?.first?.values?.firstOrNull as int;
@@ -97,7 +98,7 @@ class Dao<T> implements Queries<T>, Persistence<T> {
     final completer = Completer<List<Map<String, dynamic>>>()
       ..complete(database.rawQuery(builder.sql, builder.arguments));
 
-    if (Sqfly.logger) Logger.query(type, completer.future, builder);
+    if (isLogger) Logger.query(type, completer.future, builder);
     final result = await completer.future;
 
     return result?.firstOrNull?.values?.firstOrNull as int;
@@ -111,7 +112,7 @@ class Dao<T> implements Queries<T>, Persistence<T> {
     final completer = Completer<List<Map<String, dynamic>>>()
       ..complete(database.rawQuery(builder.sql, builder.arguments));
 
-    if (Sqfly.logger) Logger.query(type, completer.future, builder);
+    if (isLogger) Logger.query(type, completer.future, builder);
     final result = await completer.future;
 
     return result.expand((item) => item.values).toList();
@@ -124,7 +125,7 @@ class Dao<T> implements Queries<T>, Persistence<T> {
     final completer = Completer<List<Map<String, dynamic>>>()
       ..complete(database.rawQuery(builder.sql, builder.arguments));
 
-    if (Sqfly.logger) Logger.query(type, completer.future, builder);
+    if (isLogger) Logger.query(type, completer.future, builder);
     final result = await completer.future;
 
     return result.firstOrNull?.values?.firstOrNull as int;
@@ -137,7 +138,7 @@ class Dao<T> implements Queries<T>, Persistence<T> {
     final completer = Completer<List<Map<String, dynamic>>>()
       ..complete(database.rawQuery(builder.sql, builder.arguments));
 
-    if (Sqfly.logger) Logger.query(type, completer.future, builder);
+    if (isLogger) Logger.query(type, completer.future, builder);
     final result = await completer.future;
 
     return result?.firstOrNull?.values?.firstOrNull as int;
@@ -156,7 +157,7 @@ class Dao<T> implements Queries<T>, Persistence<T> {
     final completer = Completer<List<Map<String, dynamic>>>()
       ..complete(database.rawQuery(builder.sql, builder.arguments));
 
-    if (Sqfly.logger) Logger.query(type, completer.future, builder);
+    if (isLogger) Logger.query(type, completer.future, builder);
     final result = await completer.future
         .then((value) => value.map((item) => item.values.toList()).toList())
         .whenComplete(clear);
@@ -171,7 +172,7 @@ class Dao<T> implements Queries<T>, Persistence<T> {
     final completer = Completer<List<Map<String, dynamic>>>()
       ..complete(database.rawQuery(builder.sql, builder.arguments));
 
-    if (Sqfly.logger) Logger.query(type, completer.future, builder);
+    if (isLogger) Logger.query(type, completer.future, builder);
     final result = await completer.future;
 
     return result?.firstOrNull?.values?.firstOrNull as int;
@@ -294,10 +295,10 @@ class Dao<T> implements Queries<T>, Persistence<T> {
 
         Dao value;
 
-        final isDao = Sqfly.daos.containsKey(arg);
+        final isDao = Sqfly.instance.daos.containsKey(arg);
 
         if (isDao) {
-          value = Sqfly.daos[arg];
+          value = Sqfly.instance.daos[arg];
         } else if (arg is ProxyInclude) {
           value = arg.parent;
           value.includes(arg.children);
@@ -321,7 +322,7 @@ class Dao<T> implements Queries<T>, Persistence<T> {
       ..clear()
       ..addAll(
         args.map((arg) {
-          final dao = Sqfly.daos[arg];
+          final dao = Sqfly.instance.daos[arg];
 
           /// get [include] ForeignKey
           final foreignKey = schema.foreignKeys.find(
@@ -396,7 +397,7 @@ class Dao<T> implements Queries<T>, Persistence<T> {
 
       final completer = Completer<int>()
         ..complete(database.rawInsert(builder.sql, builder.arguments));
-      if (Sqfly.logger) Logger.insert(type, completer.future, builder);
+      if (isLogger) Logger.insert(type, completer.future, builder);
 
       final id = await completer.future;
 
@@ -797,7 +798,7 @@ class Dao<T> implements Queries<T>, Persistence<T> {
     final completer = Completer<int>()
       ..complete(database.rawUpdate(builder.sql, builder.arguments));
 
-    if (Sqfly.logger) Logger.update(type, completer.future, builder);
+    if (isLogger) Logger.update(type, completer.future, builder);
 
     return await completer.future.whenComplete(clear);
   }
@@ -817,7 +818,7 @@ class Dao<T> implements Queries<T>, Persistence<T> {
     final completer = Completer<int>()
       ..complete(database.rawDelete(builder.sql, builder.arguments));
 
-    if (Sqfly.logger) Logger.destroy(type, completer.future, builder);
+    if (isLogger) Logger.destroy(type, completer.future, builder);
 
     return await completer.future.whenComplete(clear);
   }
@@ -833,7 +834,7 @@ class Dao<T> implements Queries<T>, Persistence<T> {
     final completer = Completer<int>()
       ..complete(database.rawDelete(builder.sql, builder.arguments));
 
-    if (Sqfly.logger) Logger.destroy(type, completer.future, builder);
+    if (isLogger) Logger.destroy(type, completer.future, builder);
 
     return await completer.future;
   }
@@ -845,7 +846,7 @@ class Dao<T> implements Queries<T>, Persistence<T> {
     final completer = Completer<int>()
       ..complete(database.rawDelete(builder.sql, builder.arguments));
 
-    if (Sqfly.logger) Logger.destroy(type, completer.future, builder);
+    if (isLogger) Logger.destroy(type, completer.future, builder);
 
     return await completer.future;
   }
@@ -880,7 +881,7 @@ class Dao<T> implements Queries<T>, Persistence<T> {
     final completer = Completer<List<Map<String, dynamic>>>()
       ..complete(database.rawQuery(builder.sql, builder.arguments));
 
-    if (Sqfly.logger) Logger.query(type, completer.future, builder);
+    if (isLogger) Logger.query(type, completer.future, builder);
 
     /// use mapping to convert `QueryRow` into `Map` so we can edit that list
     final items = await completer.future.then(

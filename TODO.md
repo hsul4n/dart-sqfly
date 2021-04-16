@@ -1,4 +1,5 @@
 - Use DaoImpl.
+- Support iOS.
 - Set Dao as abstract class contains interfaces.
 - Add unit test.
 - Fix relations problem.

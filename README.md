@@ -89,7 +89,7 @@ class PersonDao extends Dao<Person> {
 4. Initilize your **database**
 
 ```dart
-final sqfly = await Sqfly(
+final sqfly = await Sqfly.initialize(
   /// database name
   name: 'example',
   // database version
@@ -98,13 +98,16 @@ final sqfly = await Sqfly(
   daos: [
     PersonDao(),
   ],
-).init();
+);
+
+// That's it (:
 ```
 
 5. Usage
 
 ```dart
-sqfly<UserDao>().foo().bar();
+
+Sqfly.instance<UserDao>().foo().bar();
 ```
 
 # Data Access Objects
@@ -113,29 +116,29 @@ sqfly<UserDao>().foo().bar();
 
 ```dart
 /// SELECT * FROM persons
-sqfly<PersonDao>().all; // | toList()
+Sqfly.instance<PersonDao>().all; // | toList()
 
 /// SELECT id FROM persons
-sqfly<PersonDao>().select(['id']).toList(); // [Person, ...]
+Sqfly.instance<PersonDao>().select(['id']).toList(); // [Person, ...]
 
 /// SELECT * FROM persons WHERE name = 'Sam' OR name = 'Mike'
-sqfly<PersonDao>().where({'name': 'Sam'}).or({'name': 'Mike'}).toList();
+Sqfly.instance<PersonDao>().where({'name': 'Sam'}).or({'name': 'Mike'}).toList();
 
 /// To use any other operation just pass it after attribute
 // SELECT * FROM persons where age >= 5
-sqfly<PersonDao>().where({'age >= ?': 5}).toList();
+Sqfly.instance<PersonDao>().where({'age >= ?': 5}).toList();
 
 // SELECT * FROM persons ORDER BY name DESC
-sqfly<PersonDao>().order('name DESC').toList();
+Sqfly.instance<PersonDao>().order('name DESC').toList();
 
 // SELECT * FROM persons GROUP BY name HAVING LENGTH(name) > 3
-sqfly<PersonDao>().group(['name']).having('LENGTH(name) > 3').toList();
+Sqfly.instance<PersonDao>().group(['name']).having('LENGTH(name) > 3').toList();
 
 // SELECT * FROM persons LIMIT 50 OFFSET 100
-sqfly<PersonDao>().limit(1).offset(10).toList();
+Sqfly.instance<PersonDao>().limit(1).offset(10).toList();
 
 // SELECT DISTINCT * FROM persons
-sqfly<PersonDao>().distinct().toList();
+Sqfly.instance<PersonDao>().distinct().toList();
 ```
 
 Includes
@@ -143,7 +146,7 @@ Includes
 ```dart
 // SELECT * FROM persons
 // SELECT * FROM dogs WHERE id IN (1)
-sqfly<PersonDao>().includes([DogDao]).toList();
+Sqfly.instance<PersonDao>().includes([DogDao]).toList();
 // [Person(id: 1, name: 'Sam', dogs: [Dog(id: 1, title: 'Roze')])]
 ```
 
@@ -156,7 +159,7 @@ Joins
 //   persons.name AS person_name,
 // FROM dogs
 //   INNER JOIN persons ON persons.id = dogs.person_id
-sqfly<DogDao>().joins([PersonDao]).toList();
+Sqfly.instance<DogDao>().joins([PersonDao]).toList();
 // [Dog(id: 1, title: 'Roze', person: Person(id: 1, name: 'Sam'))]
 ```
 
@@ -164,27 +167,27 @@ sqfly<DogDao>().joins([PersonDao]).toList();
 
 ```dart
 // SELECT * FROM persons WHERE name = 'Mike' LIMIT 1
-sqfly<PersonDao>().isExists({'name': 'Mike'}); // true
+Sqfly.instance<PersonDao>().isExists({'name': 'Mike'}); // true
 
 // SELECT * FROM persons WHERE id = 1 LIMIT 1
-sqfly<PersonDao>().find(1); // Person
+Sqfly.instance<PersonDao>().find(1); // Person
 
 // SELECT * FROM persons WHERE name = 'Mike' LIMIT 1
-sqfly<PersonDao>().findBy({'name': 'Mike'}); // Person
+Sqfly.instance<PersonDao>().findBy({'name': 'Mike'}); // Person
 
 // SELECT * FROM persons WHERE id = 1 LIMIT 1
-sqfly<PersonDao>().find(1); // Person
+Sqfly.instance<PersonDao>().find(1); // Person
 
 // SELECT * FROM persons
-sqfly<PersonDao>().first; // first item from select
+Sqfly.instance<PersonDao>().first; // first item from select
 
 // SELECT * FROM persons
-sqfly<PersonDao>().last; // last item from select
+Sqfly.instance<PersonDao>().last; // last item from select
 
 // SELECT * FROM persons LIMIT 1
-sqfly<PersonDao>().take();
+Sqfly.instance<PersonDao>().take();
 //  SELECT * FROM persons LIMIT 3
-sqfly<PersonDao>().take(3);
+Sqfly.instance<PersonDao>().take(3);
 ```
 
 ## [Persistence](https://api.rubyonrails.org/v6.0.3.2/classes/ActiveRecord/Persistence/ClassMethods.html)
@@ -193,18 +196,18 @@ sqfly<PersonDao>().take(3);
 final person = Person(id: 1, name: 'Sam', age: 33);
 
 // INSERT INTO persons (id, name) VALUES (1, 'Sam')
-sqfly<PersonDao>().create(person); // | createAll
+Sqfly.instance<PersonDao>().create(person); // | createAll
 // Also you can use `insert` which accepts map
-sqfly<PersonDao>().insert(person.toMap()); // insertAll
+Sqfly.instance<PersonDao>().insert(person.toMap()); // insertAll
 
 // UPDATE persons SET name = 'Steve', age = 33 WHERE id = 1
-sqfly<PersonDao>().update(person..name = 'Steve'); // | updateAll
+Sqfly.instance<PersonDao>().update(person..name = 'Steve'); // | updateAll
 
 // DELETE FROM persons WHERE id = 1
-sqfly<PersonDao>().delete(person);
+Sqfly.instance<PersonDao>().delete(person);
 
 // DELETE FROM persons WHERE id = 1
-sqfly<PersonDao>().destroy(1); // destroyAll (truncate)
+Sqfly.instance<PersonDao>().destroy(1); // destroyAll (truncate)
 ```
 
 One to one
@@ -212,7 +215,7 @@ One to one
 ```dart
 // INSERT INTO persons (id, name, age) VALUES (NULL, 'Sam', 16);
 // INSERT INTO dogs (id, title, person_id) VALUES (NULL, 'Roze', 1);
-sqfly<DogDao>().create(
+Sqfly.instance<DogDao>().create(
   Dog(
       title: 'Roze',
       person: Person(name: 'Sam', age: 16),
@@ -225,7 +228,7 @@ One to many
 ```dart
 // INSERT INTO persons (id, name, age) VALUES (NULL, 'Mike', 21);
 // INSERT INTO dogs (id, title, person_id) VALUES (NULL, 'Roze', 1);
-sqfly<PersonDao>().create(
+Sqfly.instance<PersonDao>().create(
   Person(
       name: 'Mike',
       age: 21,
@@ -241,43 +244,43 @@ sqfly<PersonDao>().create(
 
 ```dart
 /// SELECT COUNT(*) FROM persons
-sqfly<PersonDao>().count(); // 3
+Sqfly.instance<PersonDao>().count(); // 3
 
 /// SELECT COUNT(name) FROM persons
-sqfly<PersonDao>().count('name'); // 3
+Sqfly.instance<PersonDao>().count('name'); // 3
 
 /// SELECT AVG(age) FROM persons
-sqfly<PersonDao>().average('age'); // 7.4
+Sqfly.instance<PersonDao>().average('age'); // 7.4
 
 /// SELECT id FROM persons
-sqfly<PersonDao>().ids; // [1, 2, 3, ..]
+Sqfly.instance<PersonDao>().ids; // [1, 2, 3, ..]
 
 /// SELECT MAX(age) FROM persons
-sqfly<PersonDao>().maximum('age'); // 10
+Sqfly.instance<PersonDao>().maximum('age'); // 10
 
 /// SELECT MIN(age) FROM persons
-sqfly<PersonDao>().minimum('age'); // 1
+Sqfly.instance<PersonDao>().minimum('age'); // 1
 
 /// SELECT name, age FROM persons LIMIT 1
-sqfly<PersonDao>().pick(['name', 'age']); // ['Mike', 10]
+Sqfly.instance<PersonDao>().pick(['name', 'age']); // ['Mike', 10]
 
 /// SELECT name FROM persons
-sqfly<PersonDao>().pluck(['name', 'age']); // [['Mike', 'Sam'], ...]
+Sqfly.instance<PersonDao>().pluck(['name', 'age']); // [['Mike', 'Sam'], ...]
 
 /// SELECT SUM(age) FROM persons
-sqfly<PersonDao>().sum('age'); // 10.1
+Sqfly.instance<PersonDao>().sum('age'); // 10.1
 ```
 
 ## Helpers
 
 ```dart
 /// convert query to list
-sqfly<PersonDao>().foo().bar().toList(); // [Person, ...]
+Sqfly.instance<PersonDao>().foo().bar().toList(); // [Person, ...]
 /// convert query to map
-sqfly<PersonDao>().foo().bar().toMap(); // [{id: 1, name: 'Mike', age: 10}, ...]
+Sqfly.instance<PersonDao>().foo().bar().toMap(); // [{id: 1, name: 'Mike', age: 10}, ...]
 
 /// alias [count] > 0
-sqfly<PersonDao>().foo().bar().isEmpty; // | isNotEmpty
+Sqfly.instance<PersonDao>().foo().bar().isEmpty; // | isNotEmpty
 ```
 
 ## Relations

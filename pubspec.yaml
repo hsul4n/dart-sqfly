@@ -1,5 +1,5 @@
 name: sqfly
-version: 1.0.0-alpha.1
+version: 1.0.0-alpha.2
 homepage: https://github.com/hsul4n/dart-sqfly
 description: Simple ORM inspired from ActiveRecord, built ontop of Sqflite and uses DAO architecture.
 

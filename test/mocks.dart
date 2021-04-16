@@ -56,7 +56,7 @@ class PersonDao extends Dao<Person> {
         );
 }
 
-final sqfly = Sqfly(
+final sqfly = Sqfly.initialize(
   version: 1,
   daos: [PersonDao()],
 );
